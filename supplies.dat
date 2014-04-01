@@ -1,0 +1,7 @@
+#Item	Description	UnitOfMeasure	QuantityPerMonth	PricePerMonth
+Glucose_Meter	Bayer_Contour_Next_EZ	each	-	-
+Glucose_Test_Strips	Bayer_Contour_Next	each	100	26.67
+Lancets	Bayer_Microlet_Lancets	each	100	-
+Basal_Insulin	Lantus_Solostar	Unit	600	32.00
+Bolus_Insulin	NovoLog_FlexPen	Unit	300	16.00
+Needles	BD_Nano_4mm	each	100	-
