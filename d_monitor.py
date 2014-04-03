@@ -320,7 +320,7 @@ def plot_gen(data):
     """
     title_size = 16
     label_size = 12
-    figure_size = (14, 9.5)
+    figure_size = (15, 9.5)
     rgb_yellow = (1, 1, 0)
     rgb_green = (0, 1, 0)
 
@@ -339,8 +339,10 @@ def plot_gen(data):
 
     fig1, ax1 = plt.subplots(1, 1, facecolor='white', figsize=figure_size)
     fig1.canvas.set_window_title('Total Blood Glucose History')
-    ax1.plot(x1a, y1a, '-b^', linewidth=2, markersize=5)
-    ax1.plot(x1b, y1b, '-ro', linewidth=2, markersize=5)
+    ax1.plot(x1a, y1a, '-b^', linewidth=2, markersize=5,
+             label='eAG (Hemoglobin A1c)')
+    ax1.plot(x1b, y1b, '-ro', linewidth=2, markersize=5,
+             label='Blood Glucose')
 
     x1_box = [x1a[0], x1a[0], x1b[-1], x1b[-1]]
     ax1.fill(x1_box, [50, 80, 80, 50], facecolor=rgb_yellow, alpha=0.2)
@@ -349,7 +351,8 @@ def plot_gen(data):
 
     ax1.set_title('Blood Glucose vs Time\n', fontsize=title_size,
                   fontweight='bold')
-    ax1.legend(['eAG (Hemoglobin A1c)', 'Blood Glucose'])
+    ax1.legend(loc='upper right')
+
     ax1.set_xlabel('Date\n', fontsize=label_size, fontweight='bold')
     ax1.set_ylabel('Glucose Level [mg/dl]\n', fontsize=label_size,
                    fontweight='bold')
@@ -357,8 +360,8 @@ def plot_gen(data):
     plt.grid(True)
     fig1.autofmt_xdate()
     plt.tight_layout()
-    plt.show()
-    # plt.savefig('eAG.png', format='png')
+    # plt.show()
+    plt.savefig('eAG_BG_Total.png')
     plt.close(fig1)
 
     # Subplot Recent Glucose and Insulin
@@ -370,18 +373,23 @@ def plot_gen(data):
             x2a.append(obj.date)
             y2a.append(int(obj.value))
 
-    #TODO add bolus and basal lines to ax2
-
-    insulin_plot = {}
+    insulin_tot = {}
+    insulin_bolus = {}
     for obj in data['insulin.dat'][0]:
-        if obj.date.date() in insulin_plot.keys() \
+        if obj.date.date() in insulin_tot.keys() \
                 and obj.date.date() >= prior_month:
-            insulin_plot[obj.date.date()] += int(obj.value)
+            if 'bolus' in obj.type:
+                insulin_bolus[obj.date.date()] += int(obj.value)
+            insulin_tot[obj.date.date()] += int(obj.value)
         elif obj.date.date() >= prior_month:
-            insulin_plot[obj.date.date()] = int(obj.value)
+            if 'bolus' in obj.type:
+                insulin_bolus[obj.date.date()] = int(obj.value)
+            insulin_tot[obj.date.date()] = int(obj.value)
 
-    x2b = sorted(insulin_plot.keys())
-    y2b = [insulin_plot[x] for x in x2b]
+    x2b = sorted(insulin_tot.keys())
+    y2b_tot = [insulin_tot[x] for x in x2b]
+    y2b_bolus = [insulin_bolus[x] for x in x2b]
+    y2b_basal = [insulin_tot[x] - insulin_bolus[x] for x in x2b]
 
     fig2 = plt.figure(facecolor='white', figsize=figure_size)
     fig2.canvas.set_window_title('Previous Month Blood Glucose Levels')
@@ -403,20 +411,23 @@ def plot_gen(data):
     ax1.grid(True)
 
     ax2 = plt.subplot2grid((4, 1), (3, 0), sharex=ax1)
-    ax2.plot(x2b, y2b, '-m*', linewidth=2, markersize=5)
+    ax2.plot(x2b, y2b_tot, '-mD', linewidth=2, markersize=5, label='Total')
+    ax2.plot(x2b, y2b_bolus, '-g^', linewidth=2, markersize=5, label='Bolus')
+    ax2.plot(x2b, y2b_basal, '-bs', linewidth=2, markersize=5, label='Basal')
     ax2.set_title('Insulin vs Time (Recent Month)\n',
                   fontsize=title_size, fontweight='bold')
+    ax2.legend(bbox_to_anchor=(1.01, 1), loc='upper left', borderaxespad=0.)
     ax2.set_ylabel('Units [1/100 ml]\n', fontsize=label_size,
                    fontweight='bold')
-    ax2.set_ylim([0, max(y2b) - max(y2b) % 5 + 5])
+    ax2.set_ylim([0, max(y2b_tot) - max(y2b_tot) % 5 + 5])
     ax2.grid(True)
 
     plt.xlabel('\nDate', fontsize=label_size, fontweight='bold')
     fig2.autofmt_xdate()
-    fig2.subplots_adjust(hspace=1, bottom=0.12)
-    plt.show()
-    # plt.savefig('glucose_month.png', format='png')
-    plt.close()
+    fig2.subplots_adjust(hspace=1, bottom=0.14, right=0.84)
+    # plt.show()
+    plt.savefig('BG_Insulin_Month.png')
+    plt.close(fig2)
 
 
 def backup(save_list):
