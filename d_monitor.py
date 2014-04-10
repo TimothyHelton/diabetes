@@ -365,6 +365,9 @@ def plot_gen(data):
     plt.close(fig1)
 
     # Subplot Recent Glucose and Insulin
+
+    # TODO Add daily average markers for blood glucose
+    # TODO Create pie chart of time in target zone, secondary zone, and out of zone
     prior_month = datetime.date.today() + relativedelta(months=-1)
     x2a = []
     y2a = []
