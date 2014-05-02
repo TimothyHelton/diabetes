@@ -3,6 +3,7 @@
 import datetime
 from dateutil.relativedelta import relativedelta
 import matplotlib.pyplot as plt
+from matplotlib import dates
 import os
 import shutil
 
@@ -18,25 +19,26 @@ def create_file(new_file, new_header):
 def text_data():
     """ Method will collect all formatting regarding data files
     """
-    file_list = ['a1c.dat', 'carb_log.dat', 'food_index.dat', 'glucose.dat',
-                 'insulin.dat', 'supplies.dat', 'weight.dat']
+    file_list = ['a1c.dat', 'carb_log.dat', 'dosage.dat', 'food_index.dat',
+                 'glucose.dat', 'insulin.dat', 'supplies.dat', 'weight.dat']
 
-    class_list = ['A1c', 'Carb', 'Food', 'Glucose', 'Insulin', 'Supplies',
-                  'Weight']
+    class_list = ['A1c', 'Carb', 'Dose', 'Food', 'Glucose', 'Insulin',
+                  'Supplies', 'Weight']
 
-    title_list = ['Hemoglobin A1c Log', 'Carbohydrate Log', 'Food Index',
-                  'Blood Glucose Log', 'Insulin Log', 'Supplies List',
+    title_list = ['Hemoglobin A1c Log', 'Carbohydrate Log', 'Dosage Log',
+                  'Food Index', 'Blood Glucose Log', 'Insulin Log', 'Supplies List',
                   'Weight Log']
 
-    header_list = [['# Date', 'A1C'],
-                   ['# Date', 'Meal', 'Carbohydrates'],
+    header_list = [['#Date', 'A1C'],
+                   ['#Date', 'Meal', 'Carbohydrates'],
+                   ['#Date', 'Dosage Change'],
                    ['#Name', 'Unit of Measure', 'Standard Quantity',
                     'Carbohydrates'],
-                   ['# Date', 'Time', 'Glucose Level', 'Meal'],
-                   ['# Date', 'Time', 'Insulin', 'Type'],
-                   ['# Item', 'Description', 'Unit of Measure',
+                   ['#Date', 'Time', 'Glucose Level', 'Meal'],
+                   ['#Date', 'Time', 'Insulin', 'Type'],
+                   ['#Item', 'Description', 'Unit of Measure',
                     'Quantity Per Month', 'Price Per Month (USD)'],
-                   ['# Date', 'Weight']]
+                   ['#Date', 'Weight']]
 
     header_list = ['\t'.join(x) for x in header_list]
 
@@ -48,6 +50,8 @@ def text_data():
                   ['Enter Date (Year/Month/Day):\t',
                    'Enter Meal (' + ' '.join(meal_list) + '):\t',
                    'Number of Net Carbohydrates (grams):\t'],
+                  ['Enter Date (Year/Month/Day):\t',
+                   'Enter Dosage Change:\t'],
                   ['Enter Food Name:\t',
                    'Enter Unit of Measure:\t',
                    'Enter Standard Quantity:\t',
@@ -121,9 +125,10 @@ def update_prompt(sel_dict):
     """ Method will process the input provided by user
     """
     file_prompt = raw_input('\nEnter the data file you would like to update:'
-                            '\n([A]1c Log, [C]arbohydrate Log, [F]ood Index, '
-                            '[G]lucose Log, [I]nsulin Log, [S]upply List, '
-                            '[W]eight Log or [E]scape):\t').lower()
+                            '\n([A]1c Log, [C]arbohydrate Log, [D]osage Log, '
+                            '[F]ood Index, [G]lucose Log, [I]nsulin Log,'
+                            '[S]upply List, [W]eight Log or '
+                            '[E]scape):\t').lower()
     try:
         update_file = sel_dict[file_prompt[0]]
     except KeyError:
@@ -228,6 +233,16 @@ class Carb:
         return return_date_time(self.date, meal_dict[self.meal])
 
 
+class Dose:
+    """ Class to generate instances of medication dosages
+    """
+    def __init__(self, dose_date, med, dose):
+        self.date = return_date(dose_date)
+
+    def __str__(self):
+        return 'Dosage Change Date:' + '\t'*3 + str(self.date)
+
+
 class Food:
     """ Class to generate instances of food measurements
     """
@@ -320,7 +335,7 @@ def plot_gen(data):
     """
     title_size = 16
     label_size = 12
-    figure_size = (15, 9.5)
+    figure_size = (16, 9.5)
     rgb_yellow = (1, 1, 0)
     rgb_green = (0, 1, 0)
 
@@ -330,12 +345,17 @@ def plot_gen(data):
     for obj in data['a1c.dat'][0]:
         x1a.append(obj.date)
         y1a.append(float(obj.calc_e_ag()))
-    
+
     x1b = []
     y1b = []
     for obj in data['glucose.dat'][0]:
         x1b.append(obj.date)
         y1b.append(int(obj.value))
+
+    x1c = []
+    for obj in data['dosage.dat'][0]:
+        x1c.append(obj.date)
+    x1c = list(set(x1c))
 
     fig1, ax1 = plt.subplots(1, 1, facecolor='white', figsize=figure_size)
     fig1.canvas.set_window_title('Total Blood Glucose History')
@@ -343,6 +363,8 @@ def plot_gen(data):
              label='eAG (Hemoglobin A1c)')
     ax1.plot(x1b, y1b, '-ro', linewidth=2, markersize=5,
              label='Blood Glucose')
+    ax1.vlines(x1c, 0, 1000, color='m', linestyle='dashdot', linewidth=3,
+               label='Medication/Dosage Change')
 
     x1_box = [x1a[0], x1a[0], x1b[-1], x1b[-1]]
     ax1.fill(x1_box, [50, 80, 80, 50], facecolor=rgb_yellow, alpha=0.2)
@@ -367,14 +389,26 @@ def plot_gen(data):
     # Subplot Recent Glucose and Insulin
 
     # TODO Add daily average markers for blood glucose
-    # TODO Create pie chart of time in target zone, secondary zone, and out of zone
     prior_month = datetime.date.today() + relativedelta(months=-1)
     x2a = []
     y2a = []
+    total_count = 0
+    primary_zone = 0
+    secondary_zone = 0
+    out_of_zone = 0
     for obj in data['glucose.dat'][0]:
         if obj.date.date() >= prior_month:
+            total_count += 1
             x2a.append(obj.date)
-            y2a.append(int(obj.value))
+            val = int(obj.value)
+            y2a.append(val)
+
+            if val < 50 or val > 150:
+                out_of_zone += 1
+            elif 80 <= val <= 120:
+                primary_zone += 1
+            else:
+                secondary_zone += 1
 
     insulin_tot = {}
     insulin_bolus = {}
@@ -397,7 +431,7 @@ def plot_gen(data):
     fig2 = plt.figure(facecolor='white', figsize=figure_size)
     fig2.canvas.set_window_title('Previous Month Blood Glucose Levels')
 
-    ax1 = plt.subplot2grid((4, 1), (0, 0), rowspan=3)
+    ax1 = plt.subplot2grid((4, 10), (0, 0), rowspan=3, colspan=7)
     ax1.plot(x2a, y2a, '-ro', linewidth=2, markersize=5)
 
     box_begin = x2a[0] + relativedelta(days=-1)
@@ -413,7 +447,7 @@ def plot_gen(data):
     ax1.set_ylim([25, max(y2a) - max(y2a) % 10 + 20])
     ax1.grid(True)
 
-    ax2 = plt.subplot2grid((4, 1), (3, 0), sharex=ax1)
+    ax2 = plt.subplot2grid((4, 10), (3, 0), colspan=7, sharex=ax1)
     ax2.plot(x2b, y2b_tot, '-mD', linewidth=2, markersize=5, label='Total')
     ax2.plot(x2b, y2b_bolus, '-g^', linewidth=2, markersize=5, label='Bolus')
     ax2.plot(x2b, y2b_basal, '-bs', linewidth=2, markersize=5, label='Basal')
@@ -428,6 +462,16 @@ def plot_gen(data):
     plt.xlabel('\nDate', fontsize=label_size, fontweight='bold')
     fig2.autofmt_xdate()
     fig2.subplots_adjust(hspace=1, bottom=0.14, right=0.84)
+
+    ax3 = plt.subplot2grid((4, 10), (0, 8), rowspan=3, colspan=2)
+    labels = 'Primary Zone ', 'Secondary Zone', 'Out of Zone'
+    sizes = [primary_zone, secondary_zone, out_of_zone]
+    colors = [rgb_green + (0.2,), rgb_yellow + (0.2,), 'white']
+
+    ax3.pie(sizes, labels=labels, colors=colors, autopct='%1.0f%%',
+            pctdistance=0.8, labeldistance=1.2, startangle=15, radius=3)
+    ax3.axis('equal')
+
     # plt.show()
     plt.savefig('BG_Insulin_Month.png')
     plt.close(fig2)
@@ -457,7 +501,7 @@ def main():
 
     # data_dict['file_name'] = [[.str], [.date], [.value]]
     data_dict = {}
-    
+
     # Load Data
     for (file_name, class_name, title, header, prompts) in m_list:
         try:
