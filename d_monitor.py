@@ -3,7 +3,6 @@
 import datetime
 from dateutil.relativedelta import relativedelta
 import matplotlib.pyplot as plt
-from matplotlib import dates
 import os
 import shutil
 
@@ -26,8 +25,8 @@ def text_data():
                   'Supplies', 'Weight']
 
     title_list = ['Hemoglobin A1c Log', 'Carbohydrate Log', 'Dosage Log',
-                  'Food Index', 'Blood Glucose Log', 'Insulin Log', 'Supplies List',
-                  'Weight Log']
+                  'Food Index', 'Blood Glucose Log', 'Insulin Log',
+                  'Supplies List', 'Weight Log']
 
     header_list = [['#Date', 'A1C'],
                    ['#Date', 'Meal', 'Carbohydrates'],
@@ -180,7 +179,6 @@ def load_data(name_file, class_name, status_str):
     print('*******\nReading ' + status_str + ' File\n*******\n')
     for load_line in f_in:
         instance = eval(class_name + '(*load_line.split())')
-
         try:
             data.append(instance)
         except AttributeError:
@@ -189,12 +187,19 @@ def load_data(name_file, class_name, status_str):
     return [data]
 
 
-class A1c:
+class BaseDateValue:
+    """ Helper class to hold date and values
+    """
+    def __init__(self, base_date, base_value):
+        self.date = base_date
+        self.value = base_value
+
+
+class A1c(BaseDateValue):
     """ Class to generate instances of A1c measurements
     """
     def __init__(self, a1c_date, a1c_value):
-        self.date = return_date(a1c_date)
-        self.value = a1c_value
+        BaseDateValue.__init__(self, return_date(a1c_date), a1c_value)
 
     def __str__(self):
         return ('Date:' + '\t'*3 + str(self.date) + '\n' +
@@ -210,13 +215,12 @@ class A1c:
         return e_ag
 
 
-class Carb:
+class Carb(BaseDateValue):
     """ Class to generate instances of meal carbohydrate
     """
     def __init__(self, carb_date, carb_meal, carbohydrates):
-        self.date = carb_date
+        BaseDateValue.__init__(self, carb_date, carbohydrates)
         self.meal = carb_meal
-        self.value = carbohydrates
 
     def __str__(self):
         return ('Date:' + '\t'*3 + str(self.meal_time()) + '\n' +
@@ -271,12 +275,12 @@ class Food:
         return net_carbs
 
 
-class Glucose:
+class Glucose(BaseDateValue):
     """ Class to generate instances of glucose measurements
     """
     def __init__(self, glu_date, glu_time, glu_value, glu_meal):
-        self.date = return_date_time(glu_date, glu_time)
-        self.value = glu_value
+        BaseDateValue.__init__(self, return_date_time(glu_date, glu_time),
+                               glu_value)
         self.meal = glu_meal
 
     def __str__(self):
@@ -285,12 +289,12 @@ class Glucose:
                 'Meal:' + '\t'*3 + self.meal + '\n')
 
 
-class Insulin:
+class Insulin(BaseDateValue):
     """ Class to generate instances of insulin measurements
     """
     def __init__(self, ins_date, ins_time, ins_value, ins_type):
-        self.date = return_date_time(ins_date, ins_time)
-        self.value = ins_value
+        BaseDateValue.__init__(self, return_date_time(ins_date, ins_time),
+                               ins_value)
         self.type = ins_type
 
     def __str__(self):
@@ -318,12 +322,11 @@ class Supplies:
                 'Price Per Month:' + '\t'*2 + self.price)
 
 
-class Weight:
+class Weight(BaseDateValue):
     """ Class to generate instances of weight measurements
     """
     def __init__(self, weight_date, weight_value):
-        self.date = return_date(weight_date)
-        self.value = weight_value
+        BaseDateValue.__init__(return_date(weight_date), weight_value)
 
     def __str__(self):
         return ('Date:' + '\t'*2 + str(self.date) + '\n' +
