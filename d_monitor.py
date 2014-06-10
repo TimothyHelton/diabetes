@@ -362,7 +362,7 @@ def plot_gen(data):
 
     fig1, ax1 = plt.subplots(1, 1, facecolor='white', figsize=figure_size)
     fig1.canvas.set_window_title('Total Blood Glucose History')
-    ax1.plot(x1a, y1a, '-b^', linewidth=2, markersize=5,
+    ax1.plot(x1a, y1a, 'b^', markersize=18,
              label='eAG (Hemoglobin A1c)')
     ax1.plot(x1b, y1b, '-ro', linewidth=2, markersize=5,
              label='Blood Glucose')
