@@ -326,7 +326,7 @@ class Weight(BaseDateValue):
     """ Class to generate instances of weight measurements
     """
     def __init__(self, weight_date, weight_value):
-        BaseDateValue.__init__(return_date(weight_date), weight_value)
+        BaseDateValue.__init__(self, return_date(weight_date), weight_value)
 
     def __str__(self):
         return ('Date:' + '\t'*2 + str(self.date) + '\n' +
